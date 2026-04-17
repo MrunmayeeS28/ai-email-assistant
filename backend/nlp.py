@@ -33,5 +33,7 @@ def extract_query(query):
     return{
         "skills" : skills,
         "role" : role,
-        "experience" : experience
+        "experience" : experience,
+        "raw_query": query.lower()
+        
     }

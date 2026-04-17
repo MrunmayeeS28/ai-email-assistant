@@ -3,18 +3,21 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 import os
 import pickle
 import base64
+import re
 
 SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
 
 def get_body(payload):
     if 'parts' in payload:
         for part in payload['parts']:
-            if part['mimeType'] in ['text/plain', 'text/html']:
-                if 'data' in part['body']:
-                    return base64.urlsafe_b64decode(part['body']['data']).decode(errors="ignore")
-            # 🔁 check nested parts
-            if 'parts' in part:
-                return get_body(part)
+            if part['mimeType'] == 'text/plain':
+                return base64.urlsafe_b64decode(part['body']['data']).decode(errors="ignore")
+            elif part['mimeType'] == 'text/html':
+                raw = base64.urlsafe_b64decode(part['body']['data']).decode(errors="ignore")
+                
+                import re
+                clean = re.sub('<.*?>', '', raw)
+                return clean
 
     elif 'body' in payload and 'data' in payload['body']:
         return base64.urlsafe_b64decode(payload['body']['data']).decode(errors="ignore")
@@ -44,10 +47,16 @@ def authenticate_gmail():
     return service
 
 
-def fetch_emails_from_gmail():
+def fetch_emails_from_gmail(query):
     service = authenticate_gmail()
 
-    results = service.users().messages().list(userId='me', maxResults=5).execute()
+    # results = service.users().messages().list(userId='me', maxResults=5).execute()
+    results = service.users().messages().list(
+        userId='me',
+        q= query,   # 🔥 THIS IS KEY
+        maxResults=10
+    ).execute()
+    
     messages = results.get('messages', [])
 
     emails = []
