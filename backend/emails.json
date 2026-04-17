@@ -1,0 +1,20 @@
+[
+  {
+    "subject": "React Developer Application",
+    "sender": "rahul@gmail.com",
+    "date": "2024-03-10",
+    "body": "I have 2 years of experience in React and frontend development"
+  },
+  {
+    "subject": "Python Backend Developer",
+    "sender": "neha@gmail.com",
+    "date": "2024-03-11",
+    "body": "3 years experience in Python, Django and APIs"
+  },
+  {
+    "subject": "Frontend Internship",
+    "sender": "student@gmail.com",
+    "date": "2024-03-12",
+    "body": "Looking for internship, skilled in HTML, CSS, React"
+  }
+]
