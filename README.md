@@ -1,63 +1,158 @@
-# 📧 AI Email Assistant
+# AI Email Assistant
 
-## 📌 Overview
-The AI Email Assistant is a backend system that fetches emails from Gmail and allows users to search emails using natural language queries. It uses basic NLP techniques to understand user intent and returns relevant emails.
+This project is an AI-based Email Assistant that helps users search emails more efficiently.
 
----
-
-## 🚀 Features
-- Fetch emails using Gmail API
-- Search emails using natural language (e.g., "Java developer", "internship")
-- Extract key information like role, skills, and experience
-- Rank emails based on relevance
-- Tag emails (Candidate, Internship, General)
+Instead of manually going through emails, users can enter a query such as "Java developer" or "internship", and the system will fetch and display the most relevant emails.
 
 ---
 
-## 🛠️ Technologies Used
-- Python
-- FastAPI
-- Gmail API
-- Basic NLP (custom logic)
+## Overview
+
+The application integrates with Gmail using the Gmail API and allows users to search emails using natural language queries. It combines keyword-based search with simple NLP to improve relevance.
 
 ---
 
-## ⚙️ How It Works
-1. Gmail API fetches emails
-2. NLP module processes user query
-3. Search logic matches query with emails
-4. Emails are ranked based on score
-5. Results are returned via API
+## Features
+
+- Gmail API integration for fetching emails  
+- Search using natural language queries  
+- Full-text search across email subject and body  
+- Relevance-based ranking of results  
+- Preview display instead of full email body  
+- Highlighting of search keywords in subject and preview  
+- Clean and simple user interface  
 
 ---
 
-## ▶️ How to Run the Project
+## Tech Stack
+
+- Frontend: React  
+- Backend: FastAPI (Python)  
+- API: Gmail API  
+- Query processing using basic NLP  
+
+---
+
+## Project Structure
+ai-email-assistant/
+│
+├── backend/
+│ ├── main.py
+│ ├── gmail_service.py
+│ ├── search.py
+│ ├── nlp.py
+│
+├── frontend/
+│ ├── src/
+│ ├── public/
+│
+├── README.md
+└── .gitignore
+---
+
+## Setup Instructions
 
 ### 1. Clone the repository
-```bash
-git clone https://github.com/your-username/ai-email-assistant.git
+
+
+git clone https://github.com/MrunmayeeS28/ai-email-assistant.git
+
 cd ai-email-assistant
 
-2. Install dependencies:
+
+---
+
+### 2. Backend Setup
+
+Install dependencies:
+
+
 pip install fastapi uvicorn google-api-python-client google-auth-httplib2 google-auth-oauthlib
 
-3. Run the server
+
+Run the server:
+
+
 uvicorn backend.main:app --reload
 
 
-4. Open in browser
-http://127.0.0.1:8000/docs
+Backend will run on:
 
-5. Example Query
-{
-  "query": "software engineer"
-}
-Example Output
-[
-  {
-    "subject": "Software Engineer Opportunity",
-    "sender": "hr@example.com",
-    "body": "We are hiring...",
-    "tag": "Candidate"
-  }
-]
+
+http://127.0.0.1:8000
+
+
+---
+
+### 3. Frontend Setup
+
+
+cd frontend
+npm install
+npm start
+
+
+Frontend will run on:
+
+
+http://localhost:3000
+
+
+---
+
+## Gmail API Setup
+
+- Go to Google Cloud Console  
+- Enable Gmail API  
+- Create OAuth credentials  
+- Download credentials.json  
+- Place it in the project root directory  
+
+---
+
+## How It Works
+
+1. The user enters a query  
+2. The system processes the query using NLP  
+3. Gmail API fetches related emails  
+4. Emails are ranked based on relevance  
+5. Results are displayed with subject, sender, and preview  
+
+---
+
+## Example
+
+Query:
+
+
+java developer
+
+
+Output includes:
+
+- Subject  
+- Sender  
+- Preview of the email  
+- Highlighted keywords  
+
+---
+
+## Future Improvements
+
+- Add full email view functionality  
+- Improve performance using caching  
+- Add advanced filters such as date and sender  
+- Improve ranking using advanced NLP techniques  
+
+---
+
+## Author
+
+Mrunmayee Surate  
+
+---
+
+## Note
+
+- credentials.json and token.pkl are not included for security reasons  
+- These files must be added manually to run the project  
