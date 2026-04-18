@@ -2,64 +2,58 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from backend.db import load_emails
 from backend.search import search_emails
 from backend.nlp import extract_query
 from backend.gmail_service import fetch_emails_from_gmail
 
-# cached_emails = []
-
 app = FastAPI()
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # allow all (for now)
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# emails = fetch_emails_from_gmail(query.query)
 
 class Query(BaseModel):
-    query:str
-    
+    query: str
+
+
 @app.post("/search")
-def search(query: Query):
-    emails = fetch_emails_from_gmail(query.query)
-    query_data = extract_query(query.query)
-    results = search_emails(query_data,emails)
-    print("QUERY:", query.query)
+def search(request: Query):
+    
+    #STEP 1: NLP extraction
+    query_data = extract_query(request.query)
+    
+    #STEP 2: Build smart Gmail query (IMPORTANT FIX)
+    gmail_query_parts = []
+
+    if query_data["role"]:
+        gmail_query_parts.append(query_data["role"])
+
+    for skill in query_data["skills"]:
+        gmail_query_parts.append(skill)
+
+    if query_data["experience"]:
+        gmail_query_parts.append(query_data["experience"])
+
+    gmail_query = " ".join(gmail_query_parts).strip()
+
+    #fallback (if NLP fails)
+    if not gmail_query:
+        gmail_query = request.query
+
+    #STEP 3: Fetch emails from Gmail
+    emails = fetch_emails_from_gmail(gmail_query)
+
+    #STEP 4: Apply search logic
+    results = search_emails(query_data, emails)
+
+    #Debug logs (keep for now)
+    print("USER QUERY:", request.query)
+    print("GMAIL QUERY:", gmail_query)
     print("EMAIL COUNT:", len(emails))
+
     return results
-
-# @app.post("/search")
-# def search(query: Query):
-#     global cached_emails
-
-#     # 🔥 fetch only once
-#     if not cached_emails:
-#         cached_emails = fetch_emails_from_gmail(query.query)
-
-#     query_data = extract_query(query.query)
-#     results = search_emails(query_data, cached_emails)
-
-#     return results
-
-
-
-
-
-
-
-
-
-
-# query = "React developer with 2 years experience"
-
-# query_data = extract_query(query)
-
-
-# results = search_emails(query_data,emails)
-
-# for email in results:
-#     print(email["subject"]) 

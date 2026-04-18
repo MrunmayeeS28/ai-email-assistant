@@ -1,3 +1,5 @@
+import re
+
 def get_tag(email):
     text = email["body"].lower()
     
@@ -7,65 +9,76 @@ def get_tag(email):
         return "Internship"
     else:
         return "General"
-    
+
 
 def search_emails(query_data, emails):
     results = []
     
-    # 🔥 raw query for full-text search
+    #Get raw query
     query_text = query_data.get("raw_query", "").lower()
-    query_words = query_text.split()
+    
+    #Clean query (remove punctuation)
+    query_text = re.sub(r'[^a-z0-9\s]', '', query_text)
+    
+    #Remove stop words
+    stop_words = {
+        "show", "me", "with", "and", "the", "a", "an",
+        "for", "of", "to", "candidates", "please"
+    }
+    
+    query_words = [w for w in query_text.split() if w not in stop_words]
     
     for email in emails:
         score = 0
+        
         subject = email["subject"].lower()
         body = email["body"].lower()
         
-        # ✅ matching role
+        #Role matching
         if query_data["role"]:
             if query_data["role"] in subject:
-                score += 3
+                score += 4
             elif query_data["role"] in body:
-                score += 2
-            
-        # ✅ matching skill
+                score += 3
+        
+        #Skill matching
         for skill in query_data["skills"]:
             if skill in subject:
-                score += 5
+                score += 6
             elif skill in body:
-                score += 3
-                
-        # ✅ matching experience
-        if query_data["experience"] and query_data["experience"] in body:
-            score += 1
-            
-        # ✅ skill bonus
-        if query_data["skills"]:
-            skill_match = any(skill in subject or skill in body for skill in query_data["skills"])
-            if skill_match:
-                score += 2
+                score += 4
         
-        # 🔥 FULL TEXT SEARCH (like Gmail)
-        text_match_score = 0
+        # Experience matching
+            if query_data["experience"]:
+                exp = query_data["experience"]
+    
+                # match patterns like: 2 years, 2 year, 2+ years
+                pattern = rf"\b{exp}\+?\s*(year|years)\b"
+    
+                if re.search(pattern, subject) or re.search(pattern, body):
+                    score += 4  
+        
+        #Full-text matching (important for long queries)
         for word in query_words:
             if word in subject:
-                text_match_score += 2
+                score += 3
             elif word in body:
-                text_match_score += 1
+                score += 2
         
-        score += text_match_score
+        #Strong fallback match (ensures results for long queries)
+        if any(word in subject or word in body for word in query_words):
+            score += 3
         
-        # ✅ Only add relevant emails
-        if score > 0:
+        #Add only relevant emails
+        if score >= 2:
             preview = body[:150] + "..." if len(body) > 150 else body
             
-            email["preview"] = preview   # 🔥 IMPORTANT
+            email["preview"] = preview
             email["tag"] = get_tag(email)
             
             results.append((score, email))
     
-    # 🔥 sort by highest score
+    #Sort by relevance
     results.sort(reverse=True, key=lambda x: x[0])
-    
     
     return [r[1] for r in results]
