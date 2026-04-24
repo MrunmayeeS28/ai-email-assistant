@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from backend.search import search_emails
 from backend.nlp import extract_query
 from backend.gmail_service import fetch_emails_from_gmail
+from backend.storage import save_emails_locally, load_local_emails
 
 app = FastAPI()
 
@@ -16,44 +17,48 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 class Query(BaseModel):
     query: str
+    use_cache: bool = True   
+    page: int = 1
+    limit: int = 5
+      
 
+# @app.post("/search")
+# def search(request: Query):
+    
+#     query_data = extract_query(request.query)
+#     emails = fetch_emails_from_gmail("")
+#     print("Fetched emails:", len(emails))
+    
+#     results = search_emails(query_data, emails)
+
+#     start = (request.page - 1) * request.limit
+#     end = start + request.limit
+
+#     return results
 
 @app.post("/search")
 def search(request: Query):
-    
-    #STEP 1: NLP extraction
+
     query_data = extract_query(request.query)
-    
-    #STEP 2: Build smart Gmail query (IMPORTANT FIX)
-    gmail_query_parts = []
 
-    if query_data["role"]:
-        gmail_query_parts.append(query_data["role"])
+    print("Fetching fresh emails...")
 
-    for skill in query_data["skills"]:
-        gmail_query_parts.append(skill)
+    keywords = query_data.get("keywords", [])
 
-    if query_data["experience"]:
-        gmail_query_parts.append(query_data["experience"])
-
-    gmail_query = " ".join(gmail_query_parts).strip()
-
-    #fallback (if NLP fails)
-    if not gmail_query:
+    if keywords:
+        gmail_query = " OR ".join(keywords)
+    else:
         gmail_query = request.query
 
-    #STEP 3: Fetch emails from Gmail
     emails = fetch_emails_from_gmail(gmail_query)
 
-    #STEP 4: Apply search logic
-    results = search_emails(query_data, emails)
+    # overwrite cache
+    save_emails_locally(emails)
 
-    #Debug logs (keep for now)
-    print("USER QUERY:", request.query)
-    print("GMAIL QUERY:", gmail_query)
-    print("EMAIL COUNT:", len(emails))
+    print("Emails used:", len(emails))
+
+    results = search_emails(query_data, emails)
 
     return results

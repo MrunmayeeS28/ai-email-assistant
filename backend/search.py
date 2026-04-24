@@ -1,84 +1,101 @@
-import re
+from sentence_transformers import SentenceTransformer, util
 
+# 🔥 load model once (lazy loading)
+model = None
+
+def load_model():
+    global model
+    if model is None:
+        model = SentenceTransformer('all-MiniLM-L6-v2')
+    return model
+
+
+# 🔖 Tagging function
 def get_tag(email):
-    text = email["body"].lower()
-    
-    if "experience" in text or "developer" in text:
-        return "Candidate"
-    elif "internship" in text:
+    subject = email.get("subject", "").lower()
+    body = email.get("body", "").lower()
+
+    job_keywords = ["job", "opportunity", "hiring"]
+    internship_keywords = ["internship", "intern"]
+    shopping_keywords = ["order", "delivery", "shipment"]
+
+    if any(word in subject for word in internship_keywords):
         return "Internship"
-    else:
-        return "General"
+    elif any(word in subject for word in job_keywords):
+        return "Job"
+    elif any(word in subject for word in shopping_keywords):
+        return "Shopping"
+
+    if any(word in body for word in internship_keywords):
+        return "Internship"
+    elif any(word in body for word in job_keywords):
+        return "Job"
+    elif any(word in body for word in shopping_keywords):
+        return "Shopping"
+
+    return "General"
 
 
+# 🔍 MAIN SEARCH FUNCTION
 def search_emails(query_data, emails):
+    query = query_data.get("raw_query", "")
+    important_keywords = query_data.get("keywords", [])
+
+    model = load_model()
+
+    # 🔥 Encode query
+    query_embedding = model.encode(query, convert_to_tensor=True)
+
+    # 🔥 Prepare email text
+    email_texts = [
+        (email.get("subject", "") + " " + email.get("body", ""))
+        for email in emails
+    ]
+
+    # 🔥 Encode all emails
+    email_embeddings = model.encode(email_texts, convert_to_tensor=True)
+
     results = []
-    
-    #Get raw query
-    query_text = query_data.get("raw_query", "").lower()
-    
-    #Clean query (remove punctuation)
-    query_text = re.sub(r'[^a-z0-9\s]', '', query_text)
-    
-    #Remove stop words
-    stop_words = {
-        "show", "me", "with", "and", "the", "a", "an",
-        "for", "of", "to", "candidates", "please"
-    }
-    
-    query_words = [w for w in query_text.split() if w not in stop_words]
-    
-    for email in emails:
-        score = 0
-        
-        subject = email["subject"].lower()
-        body = email["body"].lower()
-        
-        #Role matching
-        if query_data["role"]:
-            if query_data["role"] in subject:
-                score += 4
-            elif query_data["role"] in body:
-                score += 3
-        
-        #Skill matching
-        for skill in query_data["skills"]:
-            if skill in subject:
-                score += 6
-            elif skill in body:
-                score += 4
-        
-        # Experience matching
-            if query_data["experience"]:
-                exp = query_data["experience"]
-    
-                # match patterns like: 2 years, 2 year, 2+ years
-                pattern = rf"\b{exp}\+?\s*(year|years)\b"
-    
-                if re.search(pattern, subject) or re.search(pattern, body):
-                    score += 4  
-        
-        #Full-text matching (important for long queries)
-        for word in query_words:
-            if word in subject:
-                score += 3
-            elif word in body:
-                score += 2
-        
-        #Strong fallback match (ensures results for long queries)
-        if any(word in subject or word in body for word in query_words):
-            score += 3
-        
-        #Add only relevant emails
-        if score >= 2:
+
+    # 🔥 Define word categories
+    generic_words = {"developer", "engineer", "job", "internship", "candidate"}
+    ignore_words = {"year", "years", "experience"}
+
+    for i, email in enumerate(emails):
+        score = util.cos_sim(query_embedding, email_embeddings[i]).item()
+
+        text = email_texts[i].lower()
+
+        # 🔥 clean keywords
+        specific_keywords = [
+            k for k in important_keywords
+            if k not in generic_words
+            and k not in ignore_words
+            and not k.isdigit()
+        ]
+
+        # 🔥 strict only for important keywords
+        if specific_keywords:
+            keyword_match = all(k in text for k in specific_keywords)
+        else:
+            keyword_match = True   # no strict filtering
+
+        # 🔥 boost if keyword present
+        if any(k in text for k in important_keywords):
+            score += 0.2
+
+        # 🔥 final filter
+        if score > 0.4 and keyword_match:
+
+            body = email.get("body", "")
             preview = body[:150] + "..." if len(body) > 150 else body
-            
+
             email["preview"] = preview
             email["tag"] = get_tag(email)
-            
+
             results.append((score, email))
-    
-    #Sort by relevance
+
+    # 🔥 sort by best match
     results.sort(reverse=True, key=lambda x: x[0])
-    
+
     return [r[1] for r in results]
