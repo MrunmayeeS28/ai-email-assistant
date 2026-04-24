@@ -1,64 +1,137 @@
 # AI Email Assistant
 
-This project is an AI-based Email Assistant that helps users search emails more efficiently.
-
-Instead of manually going through emails, users can enter a query such as "Java developer" or "internship", and the system will fetch and display the most relevant emails.
+This project is an AI-powered Email Assistant that allows users to search emails using natural language queries.  
+It improves traditional email search by combining Natural Language Processing (NLP) with semantic search.
 
 ---
 
 ## Overview
 
-The application integrates with Gmail using the Gmail API and allows users to search emails using natural language queries. It combines keyword-based search with simple NLP to improve relevance.
+Instead of manually browsing emails, users can type queries like:
+
+"Frontend developer with React experience"
+
+The system processes the query and returns the most relevant emails using meaning-based matching and filtering.
+
+---
+
+## Architecture Overview
+
+User (React Frontend)
+        ↓
+Search Query
+        ↓
+FastAPI Backend (/search)
+        ↓
+NLP Processing (extract_query)
+        ↓
+Gmail API (fetch emails)
+        ↓
+Data Preprocessing (clean email content)
+        ↓
+Semantic Search (Sentence Transformers)
+        ↓
+Ranking + Filtering
+        ↓
+Frontend Display (results + highlights)
+
+---
+
+## NLP Approach
+
+The system uses a hybrid NLP approach combining rule-based extraction and semantic understanding.
+
+### 1. Keyword Extraction
+- Removes stopwords (e.g., "show", "give", "emails")
+- Extracts meaningful keywords from the query
+
+### 2. Structured Query Processing
+The query is converted into structured filters:
+- Role (e.g., frontend developer)
+- Skills (e.g., React, Python)
+- Experience (e.g., 2 years)
+
+### 3. Semantic Matching
+- Uses Sentence Transformers (`all-MiniLM-L6-v2`)
+- Converts text into embeddings (numerical vectors)
+- Uses cosine similarity to compare:
+  - User query
+  - Email content
+
+This allows the system to understand meaning, not just keywords.
+
+### 4. Hybrid Search Logic
+- Combines keyword filtering and semantic similarity
+- Improves accuracy and relevance
+
+---
+
+## Smart Search Engine
+
+- Filters emails based on:
+  - Keywords
+  - Skills
+  - Experience (if present)
+- Ranks results using:
+  - Semantic similarity score
+  - Keyword matching boost
+
+---
+
+## Data Processing
+
+- Removes HTML tags from emails  
+- Cleans unnecessary text (signatures, footer, etc.)  
+- Extracts meaningful content  
 
 ---
 
 ## Features
 
-- Gmail API integration for fetching emails  
-- Search using natural language queries  
-- Full-text search across email subject and body  
-- Relevance-based ranking of results  
-- Preview display instead of full email body  
-- Highlighting of search keywords in subject and preview  
-- Clean and simple user interface  
+- Natural language email search  
+- Semantic search (meaning-based)  
+- Auto-tagging (Job, Internship, Shopping)  
+- Email preview with metadata (sender, date)  
+- Keyword highlighting  
+- Pagination / Load More  
+- OAuth-based Gmail authentication  
 
 ---
 
 ## Tech Stack
 
-- Frontend: React  
+- Frontend: React.js  
 - Backend: FastAPI (Python)  
-- API: Gmail API  
-- Query processing using basic NLP  
+- NLP: Sentence Transformers  
+- API: Gmail API (OAuth 2.0)  
 
 ---
 
 ## Project Structure
+
 ai-email-assistant/
 │
 ├── backend/
-│ ├── main.py
-│ ├── gmail_service.py
-│ ├── search.py
-│ ├── nlp.py
+│   ├── main.py              # API routes
+│   ├── gmail_service.py     # Gmail integration
+│   ├── search.py            # Search + ranking logic
+│   ├── nlp.py               # Query processing
 │
 ├── frontend/
-│ ├── src/
-│ ├── public/
+│   ├── src/
+│   ├── public/
 │
 ├── README.md
 └── .gitignore
+
 ---
 
 ## Setup Instructions
 
-### 1. Clone the repository
+### 1. Clone Repository
 
-
-git clone https://github.com/MrunmayeeS28/ai-email-assistant.git
-
-cd ai-email-assistant
-
+git clone https://github.com/MrunmayeeS28/ai-email-assistant.git  
+cd ai-email-assistant  
 
 ---
 
@@ -66,37 +139,25 @@ cd ai-email-assistant
 
 Install dependencies:
 
+pip install fastapi uvicorn google-api-python-client google-auth-httplib2 google-auth-oauthlib sentence-transformers  
 
-pip install fastapi uvicorn google-api-python-client google-auth-httplib2 google-auth-oauthlib
+Run server:
 
+uvicorn backend.main:app --reload  
 
-Run the server:
-
-
-uvicorn backend.main:app --reload
-
-
-Backend will run on:
-
-
-http://127.0.0.1:8000
-
+Backend runs on:  
+http://127.0.0.1:8000  
 
 ---
 
 ### 3. Frontend Setup
 
+cd frontend  
+npm install  
+npm start  
 
-cd frontend
-npm install
-npm start
-
-
-Frontend will run on:
-
-
-http://localhost:3000
-
+Frontend runs on:  
+http://localhost:3000  
 
 ---
 
@@ -106,17 +167,22 @@ http://localhost:3000
 - Enable Gmail API  
 - Create OAuth credentials  
 - Download credentials.json  
-- Place it in the project root directory  
+- Place it in the project root  
+
+First run:
+- Login popup will appear  
+- token.pkl will be generated  
 
 ---
 
 ## How It Works
 
-1. The user enters a query  
-2. The system processes the query using NLP  
-3. Gmail API fetches related emails  
-4. Emails are ranked based on relevance  
-5. Results are displayed with subject, sender, and preview  
+1. User enters a query  
+2. NLP module processes the query  
+3. Gmail API fetches emails  
+4. Emails are cleaned and processed  
+5. Semantic + keyword search is applied  
+6. Results are ranked and displayed  
 
 ---
 
@@ -124,25 +190,30 @@ http://localhost:3000
 
 Query:
 
-
-java developer
-
+java developer with 2 years experience  
 
 Output includes:
-
-- Subject  
-- Sender  
-- Preview of the email  
+- Relevant emails  
+- Subject, sender, preview  
 - Highlighted keywords  
+
+---
+
+## Limitations
+
+- Basic intent understanding (rule-based)  
+- Limited email fetch for performance  
+- Single-user authentication (demo purpose)  
 
 ---
 
 ## Future Improvements
 
-- Add full email view functionality  
-- Improve performance using caching  
-- Add advanced filters such as date and sender  
-- Improve ranking using advanced NLP techniques  
+- Multi-user authentication  
+- Advanced intent classification  
+- Full email indexing  
+- Resume/CV parsing  
+- AI-based email summarization  
 
 ---
 
@@ -155,4 +226,13 @@ Mrunmayee Surate
 ## Note
 
 - credentials.json and token.pkl are not included for security reasons  
-- These files must be added manually to run the project  
+- These files must be added manually  
+
+---
+
+## Final Result
+
+- Meets all core requirements  
+- Uses NLP and semantic search  
+- Clean architecture  
+- Fully functional system  
